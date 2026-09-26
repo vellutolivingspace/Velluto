@@ -30,3 +30,4 @@ dist-ssr
 
 # Scratch & temporary
 scratch
+*.zip

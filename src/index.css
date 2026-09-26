@@ -1,0 +1,238 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    background-color: #faf7f2;
+    color: #2c1f18;
+  }
+
+  body {
+    background-color: #faf7f2;
+    color: #2c1f18;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    overflow-x: hidden;
+  }
+}
+
+/* Custom Minimalist Architectural Scrollbar for Beige+Cream Theme */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f5eee4;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(184, 138, 94, 0.35);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(140, 76, 29, 0.6);
+}
+
+/* Luxury Editorial Glassmorphism (Porcelain & Warm Cream) */
+.glass-pill {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(214, 196, 178, 0.45);
+  box-shadow: 0 4px 20px -2px rgba(140, 90, 50, 0.06);
+}
+
+.glass-pill:hover {
+  border-color: rgba(184, 109, 52, 0.45);
+  box-shadow: 0 6px 24px -2px rgba(140, 90, 50, 0.1);
+}
+
+.glass-surface {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(250, 245, 238, 0.88) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(220, 204, 188, 0.65);
+  box-shadow: 0 10px 30px -5px rgba(140, 90, 50, 0.06);
+}
+
+.glass-surface:hover {
+  border-color: rgba(184, 109, 52, 0.4);
+  box-shadow: 0 16px 40px -10px rgba(140, 90, 50, 0.12);
+}
+
+/* Beige + Cream Soft Gradients */
+.beige-cream-gradient {
+  background: linear-gradient(180deg, #fbf9f5 0%, #f5eee4 50%, #ede3d4 100%);
+}
+
+.beige-cream-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 243, 235, 0.9) 100%);
+  border: 1px solid rgba(224, 210, 194, 0.6);
+}
+
+/* Rich Brown Luxury Text Gradients (Lighter Warm Bronze & Amber Brown) */
+.rich-brown-gradient {
+  background: linear-gradient(135deg, #743e1d 0%, #9c5525 35%, #bf7238 75%, #d8965f 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.slogan-light-gradient {
+  background: linear-gradient(135deg, #8c4c20 0%, #b06733 35%, #ce834b 75%, #e4a877 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.rich-brown-subtle {
+  background: linear-gradient(180deg, #874922 0%, #ba6f36 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.champagne-gradient {
+  background: linear-gradient(135deg, #3d2415 0%, #7d441b 50%, #b86d34 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.champagne-subtle {
+  background: linear-gradient(180deg, #4f3322 0%, #875430 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Scroll Reveal System */
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1), transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.scroll-reveal.is-revealed,
+.scroll-reveal[data-revealed="true"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.scroll-reveal-scale {
+  opacity: 0;
+  transform: scale(0.96) translateY(24px);
+  transition: opacity 1.1s cubic-bezier(0.16, 1, 0.3, 1), transform 1.1s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.scroll-reveal-scale.is-revealed,
+.scroll-reveal-scale[data-revealed="true"] {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+@keyframes fadeInSubtle {
+  from {
+    opacity: 0.5;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeInSubtle 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.scroll-reveal-line {
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+/* Architectural Folio Page Scroll Transition: Gives tactile feel of pages scrolling by */
+.folio-page {
+  position: relative;
+  transition: opacity 1.1s cubic-bezier(0.22, 1, 0.36, 1), 
+              transform 1.1s cubic-bezier(0.22, 1, 0.36, 1),
+              filter 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform, filter;
+  opacity: 0.15;
+  transform: translateY(44px) scale(0.985);
+  filter: blur(1.5px);
+}
+
+.folio-page.is-revealed,
+.folio-page[data-revealed="true"] {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0px);
+}
+
+/* Page Edge Illumination Hairline */
+.page-edge-line {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(184, 109, 52, 0.2) 20%, rgba(216, 150, 95, 0.5) 50%, rgba(184, 109, 52, 0.2) 80%, transparent 100%);
+}
+
+.scroll-reveal-line.is-revealed {
+  transform: scaleX(1);
+}
+
+/* Editorial letter-spacing */
+.tracking-architectural {
+  letter-spacing: 0.35em;
+}
+
+/* Explicit Montserrat Font Family */
+.font-montserrat {
+  font-family: 'Montserrat', sans-serif;
+}
+
+/* Luxury Modern Scroll Indicator Animations */
+@keyframes luxuryScrollWheel {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  65% {
+    transform: translateY(11px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+}
+
+.animate-scroll-wheel {
+  animation: luxuryScrollWheel 2.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@keyframes luxuryTrailDrop {
+  0% {
+    height: 0px;
+    opacity: 0;
+    transform: translateY(0);
+  }
+  35% {
+    height: 20px;
+    opacity: 1;
+  }
+  70% {
+    height: 20px;
+    opacity: 0.7;
+    transform: translateY(8px);
+  }
+  100% {
+    height: 0px;
+    opacity: 0;
+    transform: translateY(22px);
+  }
+}
+
+.animate-trail-drop {
+  animation: luxuryTrailDrop 2.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}

@@ -70,7 +70,11 @@ function doPost(e) {
     const formattedDate = Utilities.formatDate(timestamp, 'Asia/Kolkata', 'dd MMM yyyy, hh:mm:ss a') + ' IST';
     
     const name = data.name || 'Anonymous';
-    const phone = data.phone || 'N/A';
+    // Phone with country code prefix, digits only (without + sign)
+    const phone = data.phone ? String(data.phone).replace(/\D/g, '') : 'N/A';
+    // Single quote prefix ensures Google Sheets treats long phone numbers as text rather than exponential notation
+    const sheetPhone = phone !== 'N/A' ? "'" + phone : 'N/A';
+
     const email = data.email || 'N/A';
     const role = data.role || 'Homeowner';
     const requirement = data.requirement || 'General Inquiry';
@@ -80,7 +84,7 @@ function doPost(e) {
     sheet.appendRow([
       formattedDate,
       name,
-      phone,
+      sheetPhone,
       email,
       role,
       requirement,

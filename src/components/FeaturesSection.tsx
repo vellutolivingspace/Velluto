@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowUpRight, 
   Check, 
@@ -13,10 +13,12 @@ import {
   Loader2,
   AlertCircle,
   RefreshCw,
-  Mail
+  Mail,
+  ChevronDown
 } from 'lucide-react';
 import { useScrollReveal } from '../hooks/useScrollReveal';
 import { submitInquiryToGoogleSheet } from '../config/inquiry';
+import { COUNTRIES, detectUserCountryCode, formatPhoneNumberForStorage } from '../config/countries';
 
 export const FeaturesSection: React.FC = () => {
   useScrollReveal();
@@ -25,6 +27,8 @@ export const FeaturesSection: React.FC = () => {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [countryCode, setCountryCode] = useState('91');
+  const [submittedPhone, setSubmittedPhone] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -33,6 +37,13 @@ export const FeaturesSection: React.FC = () => {
     requirement: 'Modular Kitchen',
     message: '',
   });
+
+  // Auto-detect country code from user timezone and IP geolocation
+  useEffect(() => {
+    detectUserCountryCode().then((code) => {
+      if (code) setCountryCode(code);
+    });
+  }, []);
 
   // What the factory manufactures
   const productCategories = [
@@ -177,10 +188,14 @@ export const FeaturesSection: React.FC = () => {
     setIsSubmitting(true);
     setSubmitError(null);
 
+    // Format phone: prefixed with country code, digits only, strictly without '+' sign
+    const formattedPhone = formatPhoneNumberForStorage(formData.phone, countryCode);
+    setSubmittedPhone(formattedPhone);
+
     try {
       await submitInquiryToGoogleSheet({
         name: formData.name.trim(),
-        phone: formData.phone.trim(),
+        phone: formattedPhone,
         email: formData.email.trim() || undefined,
         role: formData.role,
         requirement: formData.requirement,
@@ -207,6 +222,7 @@ export const FeaturesSection: React.FC = () => {
       requirement: 'Modular Kitchen',
       message: '',
     });
+    setSubmittedPhone('');
     setFormSubmitted(false);
     setSubmitError(null);
   };
@@ -616,7 +632,7 @@ export const FeaturesSection: React.FC = () => {
                       Thank you, <strong className="font-medium text-[#26170f]">{formData.name}</strong>. Your request has been recorded in our production schedule.
                     </p>
                     <p className="text-[11px] text-[#7d6859] font-mono">
-                      Our factory team will contact you on {formData.phone} shortly.
+                      Our factory team will contact you on +{submittedPhone || formData.phone} shortly.
                     </p>
 
                     <button
@@ -659,15 +675,33 @@ export const FeaturesSection: React.FC = () => {
                         <label className="text-[10px] font-mono tracking-wider text-[#7d6859] uppercase block mb-1">
                           Mobile Number <span className="text-[#8c4c1d]">*</span>
                         </label>
-                        <input
-                          type="tel"
-                          required
-                          disabled={isSubmitting}
-                          placeholder="+91 98765 43210"
-                          value={formData.phone}
-                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-[#faf7f2] border border-[#decbb8] focus:border-[#8c4c1d] focus:bg-white text-[#26170f] text-xs outline-none transition-colors disabled:opacity-50"
-                        />
+                        <div className="flex rounded-xl bg-[#faf7f2] border border-[#decbb8] focus-within:border-[#8c4c1d] focus-within:bg-white transition-colors overflow-hidden">
+                          <div className="relative flex items-center bg-[#f3ece2]/60 hover:bg-[#ede3d5] transition-colors border-r border-[#decbb8]/70">
+                            <select
+                              disabled={isSubmitting}
+                              value={countryCode}
+                              onChange={(e) => setCountryCode(e.target.value)}
+                              className="appearance-none bg-transparent pl-2 pr-5 py-2 text-xs text-[#26170f] font-mono outline-none cursor-pointer disabled:opacity-50"
+                              aria-label="Country Dialing Code"
+                            >
+                              {COUNTRIES.map((c) => (
+                                <option key={c.iso} value={c.code} className="text-[#26170f] bg-white font-sans text-xs">
+                                  {c.flag} +{c.code} ({c.name})
+                                </option>
+                              ))}
+                            </select>
+                            <ChevronDown className="w-3 h-3 text-[#7d6859] absolute right-1 pointer-events-none" />
+                          </div>
+                          <input
+                            type="tel"
+                            required
+                            disabled={isSubmitting}
+                            placeholder={countryCode === '91' ? '98765 43210' : 'Mobile number'}
+                            value={formData.phone}
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            className="w-full px-2.5 py-2 bg-transparent text-[#26170f] text-xs outline-none font-mono disabled:opacity-50"
+                          />
+                        </div>
                       </div>
 
                       <div>

@@ -7,6 +7,7 @@ interface VellutoLogoProps {
   showText?: boolean;
   showTagline?: boolean;
   showCategories?: boolean;
+  imageClassName?: string;
 }
 
 export const VellutoLogo: React.FC<VellutoLogoProps> = ({
@@ -15,6 +16,7 @@ export const VellutoLogo: React.FC<VellutoLogoProps> = ({
   showText = true,
   showTagline = true,
   showCategories = false,
+  imageClassName = '',
 }) => {
   if (!showText) {
     // Registered Icon only (e.g. for Navbar, Loading spinner, Compact badges)
@@ -25,7 +27,7 @@ export const VellutoLogo: React.FC<VellutoLogoProps> = ({
           alt="Velluto Registered Logo Icon"
           width={size}
           height={Math.round(size * 0.37)}
-          className="object-contain block drop-shadow-sm select-none pointer-events-none"
+          className={`object-contain block drop-shadow-sm select-none pointer-events-none ${imageClassName}`}
           style={{ imageRendering: '-webkit-optimize-contrast' }}
         />
       </div>
@@ -40,7 +42,7 @@ export const VellutoLogo: React.FC<VellutoLogoProps> = ({
         alt="Velluto Living Space Registered Trademark Logo"
         width={size}
         height={Math.round(size * 0.58)}
-        className="w-full object-contain block select-none pointer-events-none drop-shadow-2xl"
+        className={`w-full object-contain block select-none pointer-events-none drop-shadow-2xl ${imageClassName}`}
         style={{
           maxWidth: `${size}px`,
           imageRendering: '-webkit-optimize-contrast',

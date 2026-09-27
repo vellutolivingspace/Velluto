@@ -11,6 +11,7 @@ export const ScrollCanvasSequence: React.FC = () => {
   const logoOverlayRef = useRef<HTMLDivElement>(null);
   const logoBrandRef = useRef<HTMLDivElement>(null);
   const scrollIndicatorRef = useRef<HTMLDivElement>(null);
+  const taglineRef = useRef<HTMLDivElement>(null);
 
   const [loadedCount, setLoadedCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -22,6 +23,7 @@ export const ScrollCanvasSequence: React.FC = () => {
   const lastDrawnIndexRef = useRef(-1);
   const animFrameIdRef = useRef<number | null>(null);
   const scrollEndTimerRef = useRef<number | null>(null);
+  const prioritizeAroundFrameRef = useRef<((frame: number) => void) | null>(null);
 
   // High-Performance Precision Canvas 2D Drawing Engine
   const drawFrame = useCallback((frameIdx: number, force = false) => {
@@ -98,21 +100,57 @@ export const ScrollCanvasSequence: React.FC = () => {
     lastDrawnIndexRef.current = safeIndex;
   }, []);
 
-  // Fast Priority Preload & Background Stream of 300 Frames
+  // Fast Multi-Tier Progressive Stream of 300 Frames
   useEffect(() => {
     let mounted = true;
-    const loadedAssets: (ImageBitmap | HTMLImageElement)[] = new Array(TOTAL_FRAMES);
     let count = 0;
+    const inFlight = new Set<number>();
+    const isLoaded = new Set<number>();
+    const highPriorityQueue: number[] = [];
+    const backgroundQueue: number[] = [];
+    const MAX_CONCURRENT = 8;
+    let activeWorkers = 0;
+
+    const pumpQueue = () => {
+      if (!mounted) return;
+      while (
+        activeWorkers < MAX_CONCURRENT &&
+        (highPriorityQueue.length > 0 || backgroundQueue.length > 0)
+      ) {
+        const nextIndex =
+          highPriorityQueue.length > 0
+            ? highPriorityQueue.shift()!
+            : backgroundQueue.shift()!;
+
+        if (isLoaded.has(nextIndex) || inFlight.has(nextIndex)) {
+          continue;
+        }
+
+        activeWorkers++;
+        loadSingleFrame(nextIndex).finally(() => {
+          activeWorkers--;
+          pumpQueue();
+        });
+      }
+    };
 
     const loadSingleFrame = (index: number): Promise<void> => {
+      if (index < 0 || index >= TOTAL_FRAMES || isLoaded.has(index) || inFlight.has(index)) {
+        return Promise.resolve();
+      }
+
+      inFlight.add(index);
       return new Promise((resolve) => {
         const frameIndex = (index + 1).toString().padStart(3, '0');
-        const src = `/Frames/ezgif-frame-${frameIndex}.png`;
+        const webpSrc = `/Frames/ezgif-frame-${frameIndex}.webp`;
         const img = new Image();
-        img.src = src;
 
-        img.onload = async () => {
-          if (!mounted) return resolve();
+        const onImageSuccess = async () => {
+          if (!mounted) {
+            inFlight.delete(index);
+            return resolve();
+          }
+
           let assetToStore: ImageBitmap | HTMLImageElement = img;
           try {
             if ('createImageBitmap' in window) {
@@ -122,57 +160,98 @@ export const ScrollCanvasSequence: React.FC = () => {
             assetToStore = img;
           }
 
-          loadedAssets[index] = assetToStore;
           imageBitmapsRef.current[index] = assetToStore;
+          isLoaded.add(index);
+          inFlight.delete(index);
           count++;
 
           if (mounted) {
             setLoadedCount(count);
-            // Draw Frame 1 immediately
-            if (index === 0) {
+            // Draw Frame 1 immediately on arrival
+            if (index === 0 || (lastDrawnIndexRef.current === -1 && count === 1)) {
               drawFrame(0, true);
             }
           }
           resolve();
         };
 
+        img.onload = onImageSuccess;
         img.onerror = () => {
-          if (mounted) {
-            count++;
-            setLoadedCount(count);
-          }
+          inFlight.delete(index);
+          isLoaded.add(index);
           resolve();
         };
+
+        img.src = webpSrc;
       });
     };
 
+    // Dynamic scrubbing priority booster:
+    // When the user scrolls towards frame N, immediately prioritize frames around N
+    prioritizeAroundFrameRef.current = (centerIndex: number) => {
+      const center = Math.round(centerIndex);
+      const radius = 6;
+      for (let offset = 0; offset <= radius; offset++) {
+        const forward = center + offset;
+        const backward = center - offset;
+        if (forward < TOTAL_FRAMES && !isLoaded.has(forward) && !inFlight.has(forward)) {
+          if (!highPriorityQueue.includes(forward)) {
+            highPriorityQueue.unshift(forward);
+          }
+        }
+        if (backward >= 0 && !isLoaded.has(backward) && !inFlight.has(backward)) {
+          if (!highPriorityQueue.includes(backward)) {
+            highPriorityQueue.unshift(backward);
+          }
+        }
+      }
+      pumpQueue();
+    };
+
     const loadAllImages = async () => {
-      // 1. Initial Priority Batch: First 15 frames load immediately (~0.5 - 0.8s)
-      const initialBatch = Array.from({ length: 15 }, (_, i) => loadSingleFrame(i));
+      // 1. Initial Priority Batch: First 12 frames load in parallel (~350KB in WebP vs 15MB PNG, ~150-250ms)
+      const initialBatch = Array.from({ length: 12 }, (_, i) => loadSingleFrame(i));
       await Promise.all(initialBatch);
 
-      // Once the initial 15 frames are ready, immediately begin smooth fade out
+      // Instant interactive reveal: loading screen clears with zero perceptible delay
       if (mounted) {
         setIsFadingOut(true);
         setTimeout(() => {
           if (mounted) setIsLoading(false);
-        }, 600);
+        }, 350);
       }
 
-      // 2. Background Stream: Stream the remaining frames in manageable batches
-      const remainingIndices = Array.from({ length: TOTAL_FRAMES - 15 }, (_, i) => i + 15);
-      const BATCH_SIZE = 12;
-      for (let i = 0; i < remainingIndices.length; i += BATCH_SIZE) {
-        if (!mounted) break;
-        const chunk = remainingIndices.slice(i, i + BATCH_SIZE);
-        await Promise.all(chunk.map((idx) => loadSingleFrame(idx)));
+      // 2. Timeline Keyframe Backbone: Load every 8th frame across 0..299
+      // Establishes visual anchors throughout the entire scroll journey so nearest fallback is never >4 frames away
+      for (let i = 12; i < TOTAL_FRAMES; i += 8) {
+        if (!isLoaded.has(i)) {
+          backgroundQueue.push(i);
+        }
       }
+      pumpQueue();
+
+      // 3. Dense Infill: Load every 2nd frame (even frames)
+      for (let i = 12; i < TOTAL_FRAMES; i += 2) {
+        if (!isLoaded.has(i) && !backgroundQueue.includes(i)) {
+          backgroundQueue.push(i);
+        }
+      }
+
+      // 4. High-Fidelity 60fps Finish: Load all remaining frames
+      for (let i = 12; i < TOTAL_FRAMES; i++) {
+        if (!isLoaded.has(i) && !backgroundQueue.includes(i)) {
+          backgroundQueue.push(i);
+        }
+      }
+
+      pumpQueue();
     };
 
     loadAllImages();
 
     return () => {
       mounted = false;
+      prioritizeAroundFrameRef.current = null;
     };
   }, [drawFrame]);
 
@@ -279,6 +358,24 @@ export const ScrollCanvasSequence: React.FC = () => {
         }
       }
 
+      // 3. Editorial Tagline: Dissolves synchronously on scroll
+      if (taglineRef.current) {
+        const taglineScrollThreshold = Math.max(160, Math.round(windowHeight * 0.25));
+        const taglineProgress = Math.min(1, Math.max(0, currentScroll / taglineScrollThreshold));
+        const taglineOpacity = Math.max(0, 1 - taglineProgress);
+        const taglineTranslateY = -taglineProgress * 30;
+
+        if (taglineOpacity <= 0.005) {
+          taglineRef.current.style.opacity = '0';
+          taglineRef.current.style.visibility = 'hidden';
+          taglineRef.current.style.pointerEvents = 'none';
+        } else {
+          taglineRef.current.style.visibility = 'visible';
+          taglineRef.current.style.opacity = taglineOpacity.toFixed(3);
+          taglineRef.current.style.transform = `translate3d(0, ${taglineTranslateY.toFixed(1)}px, 0)`;
+        }
+      }
+
       // Keep overall overlay non-blocking
       if (logoOverlayRef.current) {
         const isVisible = indicatorOpacity > 0.005 || (logoBrandRef.current && logoBrandRef.current.style.visibility !== 'hidden');
@@ -304,7 +401,13 @@ export const ScrollCanvasSequence: React.FC = () => {
 
       // Map 0 -> ANIMATION_END_RATIO (0.82) to targetFrame 0 -> 299
       const animProgress = Math.max(0, Math.min(1, scrollRatio / ANIMATION_END_RATIO));
-      targetFrameRef.current = animProgress * (TOTAL_FRAMES - 1);
+      const targetFrame = animProgress * (TOTAL_FRAMES - 1);
+      targetFrameRef.current = targetFrame;
+
+      // On-Demand Dynamic Boost: prioritize nearby frames ahead of scrubber
+      if (prioritizeAroundFrameRef.current) {
+        prioritizeAroundFrameRef.current(targetFrame);
+      }
 
       // Instant-Pause Detection:
       // When the user stops scrolling, immediately lock to the current frame within 45ms.
@@ -380,7 +483,7 @@ export const ScrollCanvasSequence: React.FC = () => {
             <div
               className="h-full bg-gradient-to-r from-[#d89f6d] via-[#c8824a] to-[#8c471c] transition-all duration-300"
               style={{
-                width: isFadingOut ? '100%' : `${Math.min(100, Math.round((loadedCount / 15) * 100))}%`,
+                width: isFadingOut ? '100%' : `${Math.min(100, Math.round((loadedCount / 12) * 100))}%`,
               }}
             />
           </div>
@@ -409,9 +512,16 @@ export const ScrollCanvasSequence: React.FC = () => {
             ref={logoOverlayRef}
             className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-6 text-center z-30"
           >
-            {/* Main Brand Logo - Fades out softly on scroll */}
+            {/* Main Brand Logo - Clean, uncluttered, iconic center */}
             <div ref={logoBrandRef} className="will-change-transform flex flex-col items-center">
-              <VellutoLogo size={360} showText={true} showTagline={true} showCategories={false} className="drop-shadow-xl" />
+              <VellutoLogo
+                size={360}
+                showText={true}
+                showTagline={false}
+                showCategories={false}
+                className="drop-shadow-xl"
+                imageClassName="[filter:brightness(0.78)_contrast(1.12)]"
+              />
             </div>
 
             {/* Modern Architectural 'Scroll to Explore' Indicator - Travels upside to navbar & disappears */}
@@ -439,6 +549,17 @@ export const ScrollCanvasSequence: React.FC = () => {
                 <div className="w-[1.5px] bg-gradient-to-b from-[#8c4c1d]/70 via-[#b86d34]/40 to-transparent mt-1.5 rounded-full animate-trail-drop" />
               </div>
             </div>
+          </div>
+
+          {/* Architectural Editorial Tagline Anchor - Bottom Left */}
+          <div
+            ref={taglineRef}
+            className="absolute bottom-8 left-6 sm:bottom-12 sm:left-12 pointer-events-none flex items-center gap-3 will-change-transform z-30 select-none"
+          >
+            <span className="w-8 sm:w-12 h-[1.5px] bg-[#8c4c1d]/45" />
+            <span className="font-montserrat font-medium text-xs sm:text-sm tracking-[0.24em] slogan-light-gradient uppercase drop-shadow-[0_1px_2px_rgba(255,255,255,0.9)]">
+              Simply luxurious
+            </span>
           </div>
         </div>
       </div>

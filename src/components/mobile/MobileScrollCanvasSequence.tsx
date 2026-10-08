@@ -2,8 +2,8 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { VellutoLogo } from '../VellutoLogo';
 
 const TOTAL_FRAMES = 300;
-const SMOOTHING_FACTOR = 0.32;
-const ANIMATION_END_RATIO = 0.85;
+const SMOOTHING_FACTOR = 0.22;
+const ANIMATION_END_RATIO = 0.86;
 
 export const MobileScrollCanvasSequence: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -445,8 +445,8 @@ export const MobileScrollCanvasSequence: React.FC = () => {
         </div>
       )}
 
-      {/* Ergonomic Mobile Scroll Track: 360vh (easy thumb navigation, 0 fatigue) */}
-      <div ref={containerRef} className="relative h-[360vh]">
+      {/* Measured Mobile Scroll Track: 580vh for slower, smoother, cinematic scrubbing */}
+      <div ref={containerRef} className="relative h-[580vh]">
         {/* Sticky Fullscreen Mobile Viewport */}
         <div className="sticky top-0 h-[100dvh] w-full overflow-hidden flex items-center justify-center bg-[#faf7f2]">
           {/* Razor-Sharp Portrait Mobile 3D Canvas */}

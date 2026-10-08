@@ -236,3 +236,12 @@
 .animate-trail-drop {
   animation: luxuryTrailDrop 2.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
 }
+
+/* Hide scrollbar utility for horizontal scroll strips */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

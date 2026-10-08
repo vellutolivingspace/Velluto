@@ -1,11 +1,24 @@
 import React from 'react';
+import { useIsMobile } from './hooks/useIsMobile';
+
+// Desktop Components (Frozen & Pristine)
 import { Navbar } from './components/Navbar';
 import { ScrollCanvasSequence } from './components/ScrollCanvasSequence';
 import { HeroScrollNarrative } from './components/HeroScrollNarrative';
 import { FeaturesSection } from './components/FeaturesSection';
 import { Footer } from './components/Footer';
 
+// Mobile Tailored Components (Compact, Touch-Ergonomic & Vertical Scroll Animations)
+import { MobileNavbar } from './components/mobile/MobileNavbar';
+import { MobileScrollCanvasSequence } from './components/mobile/MobileScrollCanvasSequence';
+import { MobileHeroScrollNarrative } from './components/mobile/MobileHeroScrollNarrative';
+import { MobileFeaturesSection } from './components/mobile/MobileFeaturesSection';
+import { MobileFooter } from './components/mobile/MobileFooter';
+import { MobileQuickActionBar } from './components/mobile/MobileQuickActionBar';
+
 export const App: React.FC = () => {
+  const isMobile = useIsMobile(768);
+
   return (
     <div className="min-h-screen bg-[#faf7f2] text-[#2c1f18] selection:bg-[#c8824a]/25 selection:text-[#2c1f18] relative">
       {/* Immovable Still Canvas Background: Motionless and serene while elements and cards float */}
@@ -16,22 +29,33 @@ export const App: React.FC = () => {
         <div className="absolute -bottom-[20%] left-[10%] w-[75vw] h-[75vw] max-w-[1050px] max-h-[1050px] rounded-full bg-gradient-to-t from-[#eddccb]/35 via-[#f5ebe0]/20 to-transparent blur-3xl" />
       </div>
 
-      <Navbar />
-      
-      {/* Floating Scroll Narrative during 3D Hero Sequence */}
-      <HeroScrollNarrative />
-
-      <main className="relative z-10">
-        {/* Hero 3D Scroll Sequence Section (Frozen & Untouched Animation Engine) */}
-        <ScrollCanvasSequence />
-        
-        {/* Classy Modern Minimalist Editorial Landing Page */}
-        <FeaturesSection />
-      </main>
-
-      <Footer />
+      {isMobile ? (
+        /* Dedicated Mobile Landing Page Experience */
+        <>
+          <MobileNavbar />
+          <MobileHeroScrollNarrative />
+          <main className="relative z-10">
+            <MobileScrollCanvasSequence />
+            <MobileFeaturesSection />
+          </main>
+          <MobileFooter />
+          <MobileQuickActionBar />
+        </>
+      ) : (
+        /* Original High-Fidelity Desktop Experience */
+        <>
+          <Navbar />
+          <HeroScrollNarrative />
+          <main className="relative z-10">
+            <ScrollCanvasSequence />
+            <FeaturesSection />
+          </main>
+          <Footer />
+        </>
+      )}
     </div>
   );
 };
 
 export default App;
+

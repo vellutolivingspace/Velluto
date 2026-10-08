@@ -108,7 +108,12 @@ export const MobileScrollCanvasSequence: React.FC = () => {
     const isLoaded = new Set<number>();
     const highPriorityQueue: number[] = [];
     const backgroundQueue: number[] = [];
-    const MAX_CONCURRENT = 6;
+    const isIOSorSafari =
+      typeof navigator !== 'undefined' &&
+      (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
+       (/^((?!chrome|android).)*safari/i.test(navigator.userAgent)));
+
+    const MAX_CONCURRENT = isIOSorSafari ? 4 : 6;
     let activeWorkers = 0;
 
     const pumpQueue = () => {
@@ -154,7 +159,10 @@ export const MobileScrollCanvasSequence: React.FC = () => {
 
           let assetToStore: ImageBitmap | HTMLImageElement = img;
           try {
-            if ('createImageBitmap' in window) {
+            // NOTE: On iOS/Safari, createImageBitmap on multi-frame sequences triggers
+            // WebKit memory crashes (EXC_RESOURCE). Drawing HTMLImageElement directly
+            // on canvas is hardware-accelerated and uses Safari's native image cache safely.
+            if (!isIOSorSafari && 'createImageBitmap' in window) {
               assetToStore = await createImageBitmap(img);
             }
           } catch {
@@ -392,12 +400,16 @@ export const MobileScrollCanvasSequence: React.FC = () => {
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('scrollend', handleScrollEnd, { passive: true });
+    if ('onscrollend' in window) {
+      window.addEventListener('scrollend', handleScrollEnd, { passive: true });
+    }
     handleScroll();
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('scrollend', handleScrollEnd);
+      if ('onscrollend' in window) {
+        window.removeEventListener('scrollend', handleScrollEnd);
+      }
       if (scrollEndTimerRef.current !== null) {
         window.clearTimeout(scrollEndTimerRef.current);
       }
@@ -447,8 +459,8 @@ export const MobileScrollCanvasSequence: React.FC = () => {
 
       {/* Measured Mobile Scroll Track: 580vh for slower, smoother, cinematic scrubbing */}
       <div ref={containerRef} className="relative h-[580vh]">
-        {/* Sticky Fullscreen Mobile Viewport */}
-        <div className="sticky top-0 h-[100dvh] w-full overflow-hidden flex items-center justify-center bg-[#faf7f2]">
+        {/* Sticky Fullscreen Mobile Viewport (h-screen fallback for iOS < 15.4) */}
+        <div className="sticky top-0 h-screen h-[100dvh] w-full overflow-hidden flex items-center justify-center bg-[#faf7f2]">
           {/* Razor-Sharp Portrait Mobile 3D Canvas */}
           <canvas
             ref={canvasRef}

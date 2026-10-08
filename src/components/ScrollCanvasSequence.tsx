@@ -153,7 +153,12 @@ export const ScrollCanvasSequence: React.FC = () => {
 
           let assetToStore: ImageBitmap | HTMLImageElement = img;
           try {
-            if ('createImageBitmap' in window) {
+            const isIOSorSafari =
+              typeof navigator !== 'undefined' &&
+              (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
+               (/^((?!chrome|android).)*safari/i.test(navigator.userAgent)));
+
+            if (!isIOSorSafari && 'createImageBitmap' in window) {
               assetToStore = await createImageBitmap(img);
             }
           } catch {
@@ -426,12 +431,16 @@ export const ScrollCanvasSequence: React.FC = () => {
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('scrollend', handleScrollEnd, { passive: true });
+    if ('onscrollend' in window) {
+      window.addEventListener('scrollend', handleScrollEnd, { passive: true });
+    }
     handleScroll();
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('scrollend', handleScrollEnd);
+      if ('onscrollend' in window) {
+        window.removeEventListener('scrollend', handleScrollEnd);
+      }
       if (scrollEndTimerRef.current !== null) {
         window.clearTimeout(scrollEndTimerRef.current);
       }

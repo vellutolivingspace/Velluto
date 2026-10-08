@@ -7,15 +7,24 @@ import { useState, useEffect } from 'react';
 export const useIsMobile = (breakpoint = 768): boolean => {
   const [isMobile, setIsMobile] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
-    return window.innerWidth < breakpoint;
+    const isMobilePhone =
+      typeof navigator !== 'undefined' &&
+      /iPhone|iPod|Android/i.test(navigator.userAgent) &&
+      !/iPad/i.test(navigator.userAgent);
+    return isMobilePhone || window.innerWidth < breakpoint;
   });
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    const isMobilePhone =
+      typeof navigator !== 'undefined' &&
+      /iPhone|iPod|Android/i.test(navigator.userAgent) &&
+      !/iPad/i.test(navigator.userAgent);
+
     const mql = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
     const updateMatch = () => {
-      setIsMobile(mql.matches);
+      setIsMobile(isMobilePhone || mql.matches || window.innerWidth < breakpoint);
     };
 
     updateMatch();

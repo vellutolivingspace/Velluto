@@ -4,9 +4,15 @@
 
 @layer base {
   html {
-    scroll-behavior: smooth;
     background-color: #faf7f2;
     color: #2c1f18;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    html {
+      scroll-behavior: smooth;
+    }
   }
 
   body {
@@ -14,6 +20,7 @@
     color: #2c1f18;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
